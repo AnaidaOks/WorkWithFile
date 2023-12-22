@@ -8,12 +8,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class Main {
+
     public static final String MAIN_FILE_PATH = "/home/anaida/learningJava/Games";
+    static StringBuilder sb = new StringBuilder();
 
     public static void main(String[] args) {
 
@@ -25,35 +28,30 @@ public class Main {
         //В каталог res создайте три директории: drawables, vectors, icons.
         //В директории temp создайте файл temp.txt.
 
-        StringBuilder sb = new StringBuilder();
-        ArrayList<String> dirs = new ArrayList<>();
-        dirs.add("src");
-        dirs.add("res");
-        dirs.add("savegames");
-        dirs.add("temp");
-        createFile(sb, MAIN_FILE_PATH, dirs, true);
+        List<String> dirs = List.of(MAIN_FILE_PATH + "/src",
+                MAIN_FILE_PATH + "/res",
+                MAIN_FILE_PATH + "/savegames",
+                MAIN_FILE_PATH + "/temp",
+                MAIN_FILE_PATH + "/src/main",
+                MAIN_FILE_PATH + "/src/test",
+                MAIN_FILE_PATH + "/res/drawables",
+                MAIN_FILE_PATH + "/res/vectors",
+                MAIN_FILE_PATH + "/res/icons");
 
-        dirs = new ArrayList<>();
-        dirs.add("main");
-        dirs.add("test");
-        createFile(sb, MAIN_FILE_PATH + "/src", dirs, true);
+        for (String dir : dirs) {
+            saveDirectory(dir);
+        }
 
-        dirs = new ArrayList<>();
-        dirs.add("Main.java");
-        dirs.add("Utils.java");
-        createFile(sb, MAIN_FILE_PATH + "/src/main", dirs, false);
+        saveFile(MAIN_FILE_PATH + "/src/main", "Main.java");
+        saveFile(MAIN_FILE_PATH + "/src/main", "Utils.java");
+        saveFile(MAIN_FILE_PATH + "/temp", "temp.txt");
 
-        dirs = new ArrayList<>();
-        dirs.add("drawables");
-        dirs.add("vectors");
-        dirs.add("icons");
-        createFile(sb, MAIN_FILE_PATH + "/res", dirs, true);
-
-        dirs = new ArrayList<>();
-        dirs.add("temp.txt");
-        createFile(sb, MAIN_FILE_PATH + "/temp", dirs, false);
-
-        System.out.println(sb);
+        try(FileWriter fw = new FileWriter(MAIN_FILE_PATH + "/temp/temp.txt", false)){
+            fw.write(sb.toString());
+            fw.flush();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 
         // task 2
 
@@ -65,10 +63,11 @@ public class Main {
         saveGame(MAIN_FILE_PATH + "/savegames/gamer3.dat", gamerThree);
 
         ArrayList<String> filesForZip = new ArrayList<>();
+        filesForZip.add(MAIN_FILE_PATH + "/savegames/gamer1.dat");
         filesForZip.add(MAIN_FILE_PATH + "/savegames/gamer2.dat");
         filesForZip.add(MAIN_FILE_PATH + "/savegames/gamer3.dat");
-
         zipFiles(MAIN_FILE_PATH + "/savegames/games.zip", filesForZip);
+
 
         // task 3
         openZip(MAIN_FILE_PATH + "/savegames/games.zip", MAIN_FILE_PATH + "/savegames");
@@ -100,6 +99,9 @@ public class Main {
                     zout.write(buffer);
                     zout.closeEntry();
                     fin.close();
+
+                    var file = new File(flToZip);
+                    file.delete();
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -113,11 +115,8 @@ public class Main {
 
         try(ZipInputStream zin = new ZipInputStream(new FileInputStream(zipFilePath))) {
             ZipEntry entry;
-            String name;
             while ((entry = zin.getNextEntry()) != null) {
-                name = entry.getName();
-                FileOutputStream fout = new FileOutputStream(whereUnzip + "/" +
-                        name.split("\\.")[0] + "_from_zip." + name.split("\\.")[1]);
+                FileOutputStream fout = new FileOutputStream(whereUnzip + "/" + entry.getName());
                 for (int c = zin.read(); c != -1; c = zin.read()) {
                     fout.write(c);
                 }
@@ -143,29 +142,20 @@ public class Main {
         return progress;
     }
 
-    public static void createFile(StringBuilder sb, String parentFile, ArrayList<String> fileName, boolean isDir) {
+    public static void saveDirectory(String dir) {
+        var file = new File(dir);
+        var isValid = file.mkdir();
+        sb.append("Папка " + dir + (isValid ? " создана" : " не создана") + "\n");
+    }
 
-        for (String fn : fileName) {
-            var file = new File(parentFile + "/" + fn);
-            if (isDir) {
-                var isValid = file.mkdir();
-                sb.append("Папка " + fn + (isValid ? " создана" : " не создана") + "\n");
-            } else {
-                try {
-                    var isValid = file.createNewFile();
-                    sb.append("Файл " + fn + (isValid ? " создан" : " не создан") + "\n");
-                    if ("temp.txt".equals(fn)) {
-                        try(FileWriter fw = new FileWriter(file, false)){
-                            fw.write(sb.toString());
-                            fw.flush();
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace(System.out);
-                }
-            }
+    public static void saveFile(String dir, String fileName) {
+
+        try {
+            var file = new File(dir + "/" + fileName);
+            var isValid = file.createNewFile();
+            sb.append("Файл " + fileName + (isValid ? " создан" : " не создан") + "\n");
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 }
